@@ -1,13 +1,22 @@
-import { WeeklySchedule, ExerciseLog } from './types';
+import { WeeklySchedule, WeeklyTargets, ExerciseLog } from './types';
 
-export const defaultSchedule: WeeklySchedule = {
-  Monday: { sport: 'gym', label: 'Gym - Session A (Pull Focus)' },
+// How many of each per week
+export const defaultTargets: WeeklyTargets = {
+  gym: 2,
+  running: 2,
+  basketball: 2,
+};
+
+// Typical layout (Sunday/Wed = basketball, Mon/Thu = gym, Tue/Fri = running)
+// This is a *suggestion* — the app won't enforce it
+export const typicalSchedule: WeeklySchedule = {
+  Sunday: { sport: 'basketball', label: 'Basketball' },
+  Monday: { sport: 'gym', label: 'Gym' },
   Tuesday: { sport: 'running', label: 'Running' },
   Wednesday: { sport: 'basketball', label: 'Basketball' },
-  Thursday: { sport: 'gym', label: 'Gym - Session B (Push Focus)' },
+  Thursday: { sport: 'gym', label: 'Gym' },
   Friday: { sport: 'running', label: 'Running' },
-  Saturday: { sport: 'basketball', label: 'Basketball' },
-  Sunday: null,
+  Saturday: null,
 };
 
 // Session A: Deadlift day / Pull focus + core

@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { getProfile, saveProfile } from '../data/storage';
-import { defaultSchedule, gymSessionA, gymSessionB, basketballDrills, runningProgression } from '../data/defaultPlan';
+import { typicalSchedule, gymSessionA, gymSessionB, basketballDrills, runningProgression } from '../data/defaultPlan';
 import { getExerciseById } from '../data/exercises';
 import { getWeekNumber, getRunningPaceTarget } from '../utils/coaching';
 import { DayOfWeek } from '../data/types';
 
-const DAYS: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DAYS: DayOfWeek[] = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 type DetailView = 'schedule' | 'gymA' | 'gymB' | 'running' | 'basketball' | 'posture';
 
@@ -19,6 +19,8 @@ export default function Plan() {
   function saveName() {
     saveProfile({ ...profile, name });
   }
+
+  const { gym, running, basketball } = profile.weeklyTargets;
 
   return (
     <div className="page fade-in">
@@ -46,6 +48,22 @@ export default function Plan() {
         </ul>
       </div>
 
+      {/* Weekly targets summary */}
+      <div className="stats-row">
+        <div className="stat-box">
+          <div className="stat-value" style={{ color: 'var(--gym)' }}>{gym}×</div>
+          <div className="stat-label">Gym</div>
+        </div>
+        <div className="stat-box">
+          <div className="stat-value" style={{ color: 'var(--running)' }}>{running}×</div>
+          <div className="stat-label">Running</div>
+        </div>
+        <div className="stat-box">
+          <div className="stat-value" style={{ color: 'var(--basketball)' }}>{basketball}×</div>
+          <div className="stat-label">Basketball</div>
+        </div>
+      </div>
+
       {/* View selector */}
       <div className="scroll-x" style={{ marginBottom: 16 }}>
         {[
@@ -68,9 +86,13 @@ export default function Plan() {
 
       {view === 'schedule' && (
         <div className="card">
-          <div className="card-title">Weekly Schedule</div>
+          <div className="card-title">Typical Week</div>
+          <div className="tip-card" style={{ marginBottom: 12 }}>
+            This is your <strong>usual</strong> layout, not a strict rule. Busy on Monday?
+            Do gym on Tuesday instead — the app tracks what's remaining, not what day it is.
+          </div>
           {DAYS.map((day) => {
-            const s = defaultSchedule[day];
+            const s = typicalSchedule[day];
             return (
               <div key={day} className={`schedule-day ${!s ? 'rest' : ''}`}>
                 <span className="day-name">{day}</span>
@@ -90,8 +112,9 @@ export default function Plan() {
             );
           })}
           <div className="tip-card" style={{ marginTop: 12 }}>
-            This schedule gives you 2 gym, 2 running, and 2 basketball sessions per week with
-            Sunday as rest. Gym alternates between Session A (pull focus) and Session B (push focus).
+            <strong>{gym + running + basketball} sessions/week</strong> — gym alternates between
+            Session A (pull focus) and Session B (push focus). The app auto-picks A or B based
+            on which you did last.
           </div>
         </div>
       )}

@@ -17,6 +17,7 @@ export interface ExerciseLog {
 
 export interface GymSession {
   type: 'gym';
+  variant: 'A' | 'B';
   warmup: { completed: boolean; duration: number; activity: string };
   exercises: ExerciseLog[];
   cooldown: { completed: boolean; duration: number; activity: string };
@@ -47,7 +48,6 @@ export interface WorkoutSession {
   id: string;
   date: string; // ISO date
   sport: Sport;
-  scheduledDay: DayOfWeek;
   data: SessionData;
   completed: boolean;
   skipped: boolean;
@@ -68,21 +68,35 @@ export interface Exercise {
   notes: string;
 }
 
+// Flexible weekly targets instead of fixed day assignments
+export interface WeeklyTargets {
+  gym: number;       // 2
+  running: number;   // 2
+  basketball: number; // 2
+}
+
+// Suggested (typical) day layout — a guide, not a rule
+export interface TypicalDay {
+  sport: Sport;
+  label: string;
+}
+
 export interface WeeklySchedule {
-  [key: string]: { sport: Sport; label: string } | null;
+  [key: string]: TypicalDay | null;
 }
 
 export interface ProgressionRule {
   exerciseId: string;
   type: 'weight' | 'reps' | 'sets';
   increment: number;
-  condition: string; // e.g., "all sets completed at current weight for 2 consecutive sessions"
+  condition: string;
 }
 
 export interface UserProfile {
   name: string;
   goals: string[];
-  weeklySchedule: WeeklySchedule;
+  weeklyTargets: WeeklyTargets;
+  typicalSchedule: WeeklySchedule; // suggested days, not enforced
   startDate: string;
   currentWeek: number;
 }

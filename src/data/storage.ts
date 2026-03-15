@@ -1,5 +1,5 @@
 import { WorkoutSession, UserProfile, WeeklyCheckIn } from './types';
-import { defaultSchedule } from './defaultPlan';
+import { defaultTargets, typicalSchedule } from './defaultPlan';
 
 const KEYS = {
   sessions: 'fc_sessions',
@@ -54,7 +54,8 @@ export function getProfile(): UserProfile {
   return load<UserProfile>(KEYS.profile, {
     name: '',
     goals: ['Build lean muscle', 'Improve posture', 'Improve running pace', 'Learn basketball'],
-    weeklySchedule: defaultSchedule,
+    weeklyTargets: defaultTargets,
+    typicalSchedule: typicalSchedule,
     startDate: new Date().toISOString().split('T')[0],
     currentWeek: 1,
   });

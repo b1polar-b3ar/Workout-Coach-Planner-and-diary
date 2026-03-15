@@ -10,11 +10,11 @@ import {
   ExerciseLog,
   ExerciseSet,
   Sport,
-  DayOfWeek,
 } from '../data/types';
 import { gymSessionA, gymSessionB, basketballDrills } from '../data/defaultPlan';
-import { getSessions, saveSession, getProfile } from '../data/storage';
+import { getSessions, saveSession } from '../data/storage';
 import { createDefaultSets, getProgressionSuggestion } from '../utils/coaching';
+import { getNextGymVariant } from '../utils/weekHelpers';
 
 const FEELINGS: [string, number][] = [
   ['😫', 1], ['😕', 2], ['😐', 3], ['🙂', 4], ['💪', 5],
@@ -26,12 +26,10 @@ export default function LogWorkout() {
   const state = location.state as { date?: string; sport?: Sport } | null;
 
   const today = format(new Date(), 'yyyy-MM-dd');
-  const profile = getProfile();
-  const dayName = format(new Date(state?.date || today), 'EEEE') as DayOfWeek;
-  const scheduled = profile.weeklySchedule[dayName];
 
   const [date, setDate] = useState(state?.date || today);
-  const [sport, setSport] = useState<Sport>(state?.sport || (scheduled as any)?.sport || 'gym');
+  const [sport, setSport] = useState<Sport>(state?.sport || 'gym');
+  const [gymVariant, setGymVariant] = useState<'A' | 'B'>('A');
   const [feeling, setFeeling] = useState<1 | 2 | 3 | 4 | 5>(3);
   const [notes, setNotes] = useState('');
   const [saved, setSaved] = useState(false);
@@ -59,7 +57,7 @@ export default function LogWorkout() {
 
   // Initialize exercises from template
   useEffect(() => {
-    // Check if there's an existing session for this date
+    // Check if there's an existing session for this date + sport
     const existing = allSessions.find((s) => s.date === date && s.sport === sport);
     if (existing) {
       setFeeling(existing.feeling);
@@ -67,6 +65,7 @@ export default function LogWorkout() {
         setExercises(existing.data.exercises);
         setWarmupDone(existing.data.warmup.completed);
         setCooldownDone(existing.data.cooldown.completed);
+        setGymVariant(existing.data.variant || 'A');
       } else if (existing.data.type === 'running') {
         setRunVariant(existing.data.variant);
         setDistance(existing.data.distance);
@@ -85,9 +84,10 @@ export default function LogWorkout() {
     }
 
     if (sport === 'gym') {
-      // Alternate A/B based on which gym day it is
-      const isSessionA = dayName === 'Monday' || dayName === 'Wednesday' || dayName === 'Friday';
-      const template = isSessionA ? gymSessionA : gymSessionB;
+      // Pick A or B based on what was done this week
+      const variant = getNextGymVariant(allSessions);
+      setGymVariant(variant);
+      const template = variant === 'A' ? gymSessionA : gymSessionB;
       setExercises(
         template.map((t) => ({
           ...t,
@@ -98,6 +98,17 @@ export default function LogWorkout() {
       setBbDrills(basketballDrills.slice(0, 4));
     }
   }, [sport, date]);
+
+  function switchGymVariant(v: 'A' | 'B') {
+    setGymVariant(v);
+    const template = v === 'A' ? gymSessionA : gymSessionB;
+    setExercises(
+      template.map((t) => ({
+        ...t,
+        sets: createDefaultSets(t.exerciseId),
+      }))
+    );
+  }
 
   function updateSet(exIdx: number, setIdx: number, field: keyof ExerciseSet, value: number | boolean) {
     setExercises((prev) => {
@@ -130,6 +141,7 @@ export default function LogWorkout() {
     if (sport === 'gym') {
       data = {
         type: 'gym',
+        variant: gymVariant,
         warmup: { completed: warmupDone, duration: 5, activity: 'Rope skipping' },
         exercises,
         cooldown: { completed: cooldownDone, duration: 5, activity: cooldownActivity },
@@ -161,7 +173,6 @@ export default function LogWorkout() {
       id: existing?.id || uuid(),
       date,
       sport,
-      scheduledDay: dayName,
       data,
       completed: !skipped,
       skipped,
@@ -207,6 +218,22 @@ export default function LogWorkout() {
       {/* GYM FORM */}
       {sport === 'gym' && (
         <>
+          {/* A/B variant selector */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+            <button
+              className={`btn btn-sm btn-full ${gymVariant === 'A' ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => switchGymVariant('A')}
+            >
+              Session A (Pull)
+            </button>
+            <button
+              className={`btn btn-sm btn-full ${gymVariant === 'B' ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => switchGymVariant('B')}
+            >
+              Session B (Push)
+            </button>
+          </div>
+
           {/* Warmup */}
           <div className="exercise-row">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
