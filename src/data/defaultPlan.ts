@@ -1,0 +1,134 @@
+import { WeeklySchedule, WeeklyTargets, ExerciseLog } from './types';
+
+// How many of each per week
+export const defaultTargets: WeeklyTargets = {
+  gym: 2,
+  running: 2,
+  basketball: 2,
+};
+
+// Typical layout (Sunday/Wed = basketball, Mon/Thu = gym, Tue/Fri = running)
+// This is a *suggestion* — the app won't enforce it
+export const typicalSchedule: WeeklySchedule = {
+  Sunday: { sport: 'basketball', label: 'Basketball' },
+  Monday: { sport: 'gym', label: 'Gym' },
+  Tuesday: { sport: 'running', label: 'Running' },
+  Wednesday: { sport: 'basketball', label: 'Basketball' },
+  Thursday: { sport: 'gym', label: 'Gym' },
+  Friday: { sport: 'running', label: 'Running' },
+  Saturday: null,
+};
+
+// Session A: Deadlift day / Pull focus + core
+export const gymSessionA: Omit<ExerciseLog, 'sets'>[] = [
+  { exerciseId: 'deadlift', exerciseName: 'Deadlift', notes: '' },
+  { exerciseId: 'kettlebell-swing', exerciseName: 'Kettlebell Swing', notes: '' },
+  { exerciseId: 'lat-pulldown', exerciseName: 'Lat Pulldown', notes: 'Or assisted pull-ups' },
+  { exerciseId: 'seated-cable-row', exerciseName: 'Seated Cable Row', notes: '' },
+  { exerciseId: 'face-pull', exerciseName: 'Face Pull', notes: 'Posture correction' },
+  { exerciseId: 'dead-bug', exerciseName: 'Dead Bug', notes: 'Core & posture' },
+  { exerciseId: 'hanging-leg-raise', exerciseName: 'Hanging Leg Raise', notes: '' },
+];
+
+// Session B: Press day / Push focus + core
+export const gymSessionB: Omit<ExerciseLog, 'sets'>[] = [
+  { exerciseId: 'goblet-squat', exerciseName: 'Goblet Squat', notes: '' },
+  { exerciseId: 'db-incline-press', exerciseName: 'Dumbbell Incline Press', notes: '' },
+  { exerciseId: 'overhead-press', exerciseName: 'Dumbbell Overhead Press', notes: '' },
+  { exerciseId: 'renegade-row', exerciseName: 'Renegade Row', notes: '' },
+  { exerciseId: 'glute-bridge', exerciseName: 'Glute Bridge', notes: 'Posture correction' },
+  { exerciseId: 'bird-dog', exerciseName: 'Bird Dog', notes: 'Core & posture' },
+  { exerciseId: 'ab-wheel-rollout', exerciseName: 'Ab Wheel Rollout', notes: '' },
+];
+
+// Basketball drills for a beginner training solo
+export interface DrillInfo {
+  name: string;
+  duration: string;
+  videos: { title: string; url: string; channel: string }[];
+}
+
+export const basketballDrills: DrillInfo[] = [
+  {
+    name: 'Ball handling / dribbling drills',
+    duration: '10 min',
+    videos: [
+      { title: '5 Minute Dribbling Routine You Can Do ANYWHERE', url: 'https://www.youtube.com/watch?v=SnVAhnaZAQs', channel: 'ILoveBasketballTV' },
+      { title: 'Best Ball Handling Workout for Beginners', url: 'https://www.youtube.com/watch?v=8x1LsBeyFiY', channel: 'By Any Means Basketball' },
+    ],
+  },
+  {
+    name: 'Shooting form practice - close range',
+    duration: '10 min',
+    videos: [
+      { title: 'How to Shoot a Basketball for Beginners', url: 'https://www.youtube.com/watch?v=wKVsECNgRiU', channel: 'ShotMechanics' },
+      { title: 'Shooting Form Fundamentals', url: 'https://www.youtube.com/watch?v=SdJ3bWxje98', channel: 'Coach Fui' },
+    ],
+  },
+  {
+    name: 'Free throws',
+    duration: '10 min',
+    videos: [
+      { title: 'How to Shoot Free Throws - Never Miss Again', url: 'https://www.youtube.com/watch?v=q5gLYmEacXg', channel: 'ShotMechanics' },
+      { title: 'Free Throw Shooting Routine', url: 'https://www.youtube.com/watch?v=GWbtGmFSPpc', channel: 'ILoveBasketballTV' },
+    ],
+  },
+  {
+    name: 'Layup drills - both sides',
+    duration: '10 min',
+    videos: [
+      { title: 'How to Do a Layup for Beginners', url: 'https://www.youtube.com/watch?v=Nt16bn8PUpc', channel: 'ILoveBasketballTV' },
+      { title: 'Layup Drills to Finish Like a Pro', url: 'https://www.youtube.com/watch?v=ZaSny7xbfyk', channel: 'By Any Means Basketball' },
+    ],
+  },
+  {
+    name: 'Defensive slides & footwork',
+    duration: '5 min',
+    videos: [
+      { title: 'Defensive Slides and Footwork Drills', url: 'https://www.youtube.com/watch?v=oVPGatPE4yQ', channel: 'ILoveBasketballTV' },
+      { title: 'Basketball Footwork Drills for Beginners', url: 'https://www.youtube.com/watch?v=MkU0ZW9DJFM', channel: 'Shot Science Basketball' },
+    ],
+  },
+  {
+    name: 'Pick-up games or 1v1',
+    duration: 'remaining time',
+    videos: [],
+  },
+];
+
+// Flat list of drill names for backward compat (checklist in log form)
+export const basketballDrillNames = basketballDrills.map(
+  (d) => `${d.name} (${d.duration})`
+);
+
+// Running progression plan
+export const runningProgression = {
+  solo: {
+    currentPace: '5:45',
+    currentDistance: 7,
+    targetPace: '5:15',
+    targetDistance: 10,
+    weeklyPaceImprovement: 3, // seconds
+    weeklyDistanceIncrease: 0.25, // km every 2 weeks
+  },
+  group: {
+    currentPace: '6:32',
+    currentDistance: 7.5,
+    notes: 'Social runs, keep conversational pace. Build endurance.',
+  },
+};
+
+// Progressive overload rules
+export const progressionRules: Record<string, { type: 'weight' | 'reps'; increment: number; threshold: number }> = {
+  'deadlift': { type: 'weight', increment: 2.5, threshold: 2 },
+  'kettlebell-swing': { type: 'reps', increment: 2, threshold: 2 },
+  'db-incline-press': { type: 'weight', increment: 1, threshold: 2 },
+  'lat-pulldown': { type: 'weight', increment: 2.5, threshold: 2 },
+  'assisted-pullup': { type: 'reps', increment: 1, threshold: 2 },
+  'seated-cable-row': { type: 'weight', increment: 2.5, threshold: 2 },
+  'renegade-row': { type: 'weight', increment: 1, threshold: 3 },
+  'face-pull': { type: 'reps', increment: 2, threshold: 2 },
+  'goblet-squat': { type: 'weight', increment: 2, threshold: 2 },
+  'overhead-press': { type: 'weight', increment: 1, threshold: 2 },
+  'glute-bridge': { type: 'reps', increment: 2, threshold: 2 },
+};
