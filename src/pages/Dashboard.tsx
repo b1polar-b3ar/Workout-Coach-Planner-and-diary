@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { WorkoutSession, DayOfWeek, Sport } from '../data/types';
-import { getSessions, getProfile } from '../data/storage';
+import { getSessions, getProfile, saveProfile } from '../data/storage';
 import { generateCoachingTips, getWeekNumber, getRunningPaceTarget } from '../utils/coaching';
-import { getWeekCounts, getRemaining, suggestToday } from '../utils/weekHelpers';
+import { getWeekCounts, getRemaining, suggestToday, getNextGymVariant } from '../utils/weekHelpers';
+import { getAiCoaching, getApiKey, saveApiKey, AiSuggestion } from '../utils/aiCoach';
 
 const DAYS: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const FEELINGS = ['😫', '😕', '😐', '🙂', '💪'];
@@ -13,6 +14,12 @@ const SPORT_EMOJI: Record<Sport, string> = { gym: '🏋️', running: '🏃', ba
 export default function Dashboard() {
   const navigate = useNavigate();
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
+  const [name, setName] = useState('');
+  const [aiResult, setAiResult] = useState<AiSuggestion | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
+  const [apiKey, setApiKey] = useState(getApiKey());
+  const [showApiInput, setShowApiInput] = useState(false);
   const profile = getProfile();
   const today = new Date();
   const todayStr = format(today, 'yyyy-MM-dd');
@@ -21,6 +28,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     setSessions(getSessions());
+    setName(profile.name);
   }, []);
 
   const weekNumber = getWeekNumber(profile.startDate);
@@ -31,6 +39,35 @@ export default function Dashboard() {
   const totalTarget = profile.weeklyTargets.gym + profile.weeklyTargets.running + profile.weeklyTargets.basketball;
   const totalDone = counts.gym + counts.running + counts.basketball;
   const runTarget = getRunningPaceTarget(weekNumber);
+
+  function saveName() {
+    saveProfile({ ...profile, name });
+  }
+
+  async function fetchAiCoaching() {
+    if (!apiKey) {
+      setShowApiInput(true);
+      return;
+    }
+    setAiLoading(true);
+    setAiError('');
+    setAiResult(null);
+    try {
+      const sport = suggestion?.sport || 'gym';
+      const variant = sport === 'gym' ? getNextGymVariant(sessions) : undefined;
+      const result = await getAiCoaching(sessions, sport, variant);
+      setAiResult(result);
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : 'Failed to get coaching');
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
+  function handleSaveApiKey() {
+    saveApiKey(apiKey);
+    setShowApiInput(false);
+  }
 
   // Build week view from actual logs (not from fixed schedule)
   const weekDays = DAYS.map((day, i) => {
@@ -43,11 +80,23 @@ export default function Dashboard() {
 
   return (
     <div className="page fade-in">
+      {/* Greeting + name */}
+      <div className="card" style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+        <input
+          placeholder="Your name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onBlur={saveName}
+          style={{ flex: 1 }}
+        />
+        <span style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Week {weekNumber}</span>
+      </div>
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
         <h1 className="page-title" style={{ marginBottom: 0 }}>
-          {format(today, 'EEEE, MMM d')}
+          {name ? `Hey ${name}` : format(today, 'EEEE, MMM d')}
         </h1>
-        <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Week {weekNumber}</span>
+        <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{format(today, 'MMM d')}</span>
       </div>
 
       {/* Suggestion for today */}
@@ -170,6 +219,87 @@ export default function Dashboard() {
       {tips.map((tip, i) => (
         <div key={i} className="tip-card">{tip}</div>
       ))}
+
+      {/* AI Coach */}
+      <div className="card" style={{ marginTop: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <div className="card-title" style={{ marginBottom: 0 }}>AI Coach</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              className="btn btn-sm btn-secondary"
+              onClick={() => setShowApiInput(!showApiInput)}
+              style={{ fontSize: 11, padding: '4px 8px' }}
+            >
+              {apiKey ? 'Key set' : 'Set API Key'}
+            </button>
+            <button
+              className="btn btn-sm btn-primary"
+              onClick={fetchAiCoaching}
+              disabled={aiLoading}
+            >
+              {aiLoading ? 'Thinking...' : 'Get Advice'}
+            </button>
+          </div>
+        </div>
+
+        {showApiInput && (
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+            <input
+              type="password"
+              placeholder="Anthropic API key"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              style={{ flex: 1, fontSize: 12 }}
+            />
+            <button className="btn btn-sm btn-success" onClick={handleSaveApiKey}>Save</button>
+          </div>
+        )}
+
+        {aiError && (
+          <div style={{ color: 'var(--danger)', fontSize: 13, marginBottom: 8 }}>
+            {aiError}
+          </div>
+        )}
+
+        {!aiResult && !aiLoading && !aiError && (
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+            Get personalized suggestions for your next session based on your workout history.
+          </p>
+        )}
+
+        {aiResult && (
+          <div>
+            <div className="tip-card" style={{ marginBottom: 8 }}>
+              <strong>Summary:</strong> {aiResult.summary}
+            </div>
+            <div className="suggestion" style={{ marginBottom: 8 }}>
+              <strong>Next Session:</strong> {aiResult.nextSession.details}
+              {aiResult.nextSession.gymExercises && aiResult.nextSession.gymExercises.length > 0 && (
+                <div style={{ marginTop: 8 }}>
+                  {aiResult.nextSession.gymExercises.map((ex) => (
+                    <div key={ex.exerciseId} style={{ fontSize: 12, padding: '2px 0' }}>
+                      {ex.exerciseId}: {ex.suggestedSets}x{ex.suggestedReps} @ {ex.suggestedWeight}kg
+                    </div>
+                  ))}
+                </div>
+              )}
+              {aiResult.nextSession.runningPace && (
+                <div style={{ fontSize: 12, marginTop: 4 }}>
+                  Target pace: {aiResult.nextSession.runningPace}/km | Distance: {aiResult.nextSession.runningDistance}km
+                </div>
+              )}
+            </div>
+            {aiResult.tips.length > 0 && (
+              <div>
+                <strong style={{ fontSize: 13 }}>Tips:</strong>
+                {aiResult.tips.map((tip, i) => (
+                  <div key={i} className="tip-card" style={{ marginTop: 4 }}>{tip}</div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
