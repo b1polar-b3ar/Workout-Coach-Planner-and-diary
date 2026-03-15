@@ -194,7 +194,17 @@ export default function Plan() {
             <h4 style={{ fontSize: 14, marginBottom: 8 }}>Drill Menu</h4>
             {basketballDrills.map((drill, i) => (
               <div key={i} style={{ padding: '6px 0', borderBottom: '1px solid var(--border)', fontSize: 13 }}>
-                {drill}
+                <strong>{drill.name}</strong> ({drill.duration})
+                {drill.videos.length > 0 && (
+                  <div style={{ marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {drill.videos.map((v, vi) => (
+                      <a key={vi} href={v.url} target="_blank" rel="noopener noreferrer"
+                        style={{ fontSize: 12, color: 'var(--accent)' }}>
+                        {v.title}
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>

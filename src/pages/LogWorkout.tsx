@@ -11,7 +11,7 @@ import {
   ExerciseSet,
   Sport,
 } from '../data/types';
-import { gymSessionA, gymSessionB, basketballDrills } from '../data/defaultPlan';
+import { gymSessionA, gymSessionB, basketballDrillNames } from '../data/defaultPlan';
 import { getSessions, saveSession } from '../data/storage';
 import { createDefaultSets, getProgressionSuggestion } from '../utils/coaching';
 import { getNextGymVariant } from '../utils/weekHelpers';
@@ -95,7 +95,7 @@ export default function LogWorkout() {
         }))
       );
     } else if (sport === 'basketball') {
-      setBbDrills(basketballDrills.slice(0, 4));
+      setBbDrills(basketballDrillNames.slice(0, 4));
     }
   }, [sport, date]);
 
@@ -371,7 +371,7 @@ export default function LogWorkout() {
           </div>
           <div className="input-group">
             <label className="input-label">Drills / Activities</label>
-            {basketballDrills.map((drill) => (
+            {basketballDrillNames.map((drill) => (
               <label key={drill} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', fontSize: 13, cursor: 'pointer' }}>
                 <input
                   type="checkbox"

@@ -42,14 +42,64 @@ export const gymSessionB: Omit<ExerciseLog, 'sets'>[] = [
 ];
 
 // Basketball drills for a beginner training solo
-export const basketballDrills = [
-  'Ball handling / dribbling drills (10 min)',
-  'Shooting form practice - close range (10 min)',
-  'Free throws (10 min)',
-  'Layup drills - both sides (10 min)',
-  'Defensive slides & footwork (5 min)',
-  'Pick-up games or 1v1 if available',
+export interface DrillInfo {
+  name: string;
+  duration: string;
+  videos: { title: string; url: string; channel: string }[];
+}
+
+export const basketballDrills: DrillInfo[] = [
+  {
+    name: 'Ball handling / dribbling drills',
+    duration: '10 min',
+    videos: [
+      { title: '5 Minute Dribbling Routine You Can Do ANYWHERE', url: 'https://www.youtube.com/watch?v=SnVAhnaZAQs', channel: 'ILoveBasketballTV' },
+      { title: 'Best Ball Handling Workout for Beginners', url: 'https://www.youtube.com/watch?v=8x1LsBeyFiY', channel: 'By Any Means Basketball' },
+    ],
+  },
+  {
+    name: 'Shooting form practice - close range',
+    duration: '10 min',
+    videos: [
+      { title: 'How to Shoot a Basketball for Beginners', url: 'https://www.youtube.com/watch?v=wKVsECNgRiU', channel: 'ShotMechanics' },
+      { title: 'Shooting Form Fundamentals', url: 'https://www.youtube.com/watch?v=SdJ3bWxje98', channel: 'Coach Fui' },
+    ],
+  },
+  {
+    name: 'Free throws',
+    duration: '10 min',
+    videos: [
+      { title: 'How to Shoot Free Throws - Never Miss Again', url: 'https://www.youtube.com/watch?v=q5gLYmEacXg', channel: 'ShotMechanics' },
+      { title: 'Free Throw Shooting Routine', url: 'https://www.youtube.com/watch?v=GWbtGmFSPpc', channel: 'ILoveBasketballTV' },
+    ],
+  },
+  {
+    name: 'Layup drills - both sides',
+    duration: '10 min',
+    videos: [
+      { title: 'How to Do a Layup for Beginners', url: 'https://www.youtube.com/watch?v=Nt16bn8PUpc', channel: 'ILoveBasketballTV' },
+      { title: 'Layup Drills to Finish Like a Pro', url: 'https://www.youtube.com/watch?v=ZaSny7xbfyk', channel: 'By Any Means Basketball' },
+    ],
+  },
+  {
+    name: 'Defensive slides & footwork',
+    duration: '5 min',
+    videos: [
+      { title: 'Defensive Slides and Footwork Drills', url: 'https://www.youtube.com/watch?v=oVPGatPE4yQ', channel: 'ILoveBasketballTV' },
+      { title: 'Basketball Footwork Drills for Beginners', url: 'https://www.youtube.com/watch?v=MkU0ZW9DJFM', channel: 'Shot Science Basketball' },
+    ],
+  },
+  {
+    name: 'Pick-up games or 1v1',
+    duration: 'remaining time',
+    videos: [],
+  },
 ];
+
+// Flat list of drill names for backward compat (checklist in log form)
+export const basketballDrillNames = basketballDrills.map(
+  (d) => `${d.name} (${d.duration})`
+);
 
 // Running progression plan
 export const runningProgression = {
