@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getProfile, saveProfile } from '../data/storage';
+import { getProfile } from '../data/storage';
 import { typicalSchedule, gymSessionA, gymSessionB, basketballDrills, runningProgression } from '../data/defaultPlan';
 import { getExerciseById } from '../data/exercises';
 import { getWeekNumber, getRunningPaceTarget } from '../utils/coaching';
@@ -11,32 +11,15 @@ type DetailView = 'schedule' | 'gymA' | 'gymB' | 'running' | 'basketball' | 'pos
 
 export default function Plan() {
   const profile = getProfile();
-  const [name, setName] = useState(profile.name);
   const [view, setView] = useState<DetailView>('schedule');
   const weekNumber = getWeekNumber(profile.startDate);
   const runTarget = getRunningPaceTarget(weekNumber);
-
-  function saveName() {
-    saveProfile({ ...profile, name });
-  }
 
   const { gym, running, basketball } = profile.weeklyTargets;
 
   return (
     <div className="page fade-in">
       <h1 className="page-title">Training Plan</h1>
-
-      {/* Name */}
-      <div className="card" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <input
-          placeholder="Your name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onBlur={saveName}
-          style={{ flex: 1 }}
-        />
-        <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Week {weekNumber}</span>
-      </div>
 
       {/* Goals */}
       <div className="card">
