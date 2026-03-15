@@ -196,11 +196,11 @@ export default function Plan() {
               <div key={i} style={{ padding: '6px 0', borderBottom: '1px solid var(--border)', fontSize: 13 }}>
                 <strong>{drill.name}</strong> ({drill.duration})
                 {drill.videos.length > 0 && (
-                  <div style={{ marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
                     {drill.videos.map((v, vi) => (
                       <a key={vi} href={v.url} target="_blank" rel="noopener noreferrer"
-                        style={{ fontSize: 12, color: 'var(--accent)' }}>
-                        {v.title}
+                        style={{ fontSize: 13, color: 'var(--accent-light)', textDecoration: 'underline' }}>
+                        ▶ {v.title}
                       </a>
                     ))}
                   </div>
