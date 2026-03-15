@@ -191,7 +191,7 @@ export default function Plan() {
             Focus on fundamentals since you're just starting out. Each session ~70 min.
           </p>
           <div style={{ marginBottom: 12 }}>
-            <h4 style={{ fontSize: 14, marginBottom: 8 }}>Drill Menu</h4>
+            <h4 style={{ fontSize: 14, marginBottom: 8 }}>Drill Menu — Tutorial Videos</h4>
             {basketballDrills.map((drill, i) => (
               <div key={i} style={{ padding: '6px 0', borderBottom: '1px solid var(--border)', fontSize: 13 }}>
                 <strong>{drill.name}</strong> ({drill.duration})
