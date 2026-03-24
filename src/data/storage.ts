@@ -1,5 +1,6 @@
 import { WorkoutSession, UserProfile, WeeklyCheckIn } from './types';
 import { defaultTargets, typicalSchedule } from './defaultPlan';
+import { isSyncEnabled, pushSession, pushProfile, deleteRemoteSession, pullSessions, pullProfile } from './supabase';
 
 const KEYS = {
   sessions: 'fc_sessions',
@@ -34,11 +35,20 @@ export function saveSession(session: WorkoutSession) {
     sessions.push(session);
   }
   save(KEYS.sessions, sessions);
+
+  // Fire-and-forget sync to Supabase
+  if (isSyncEnabled()) {
+    pushSession(session).catch(() => {});
+  }
 }
 
 export function deleteSession(id: string) {
   const sessions = getSessions().filter((s) => s.id !== id);
   save(KEYS.sessions, sessions);
+
+  if (isSyncEnabled()) {
+    deleteRemoteSession(id).catch(() => {});
+  }
 }
 
 export function getSessionsByDateRange(start: string, end: string): WorkoutSession[] {
@@ -50,19 +60,25 @@ export function getSessionsBySport(sport: string): WorkoutSession[] {
 }
 
 // Profile
+const defaultProfile: UserProfile = {
+  name: '',
+  goals: ['Build lean muscle', 'Improve posture', 'Improve running pace', 'Learn basketball'],
+  weeklyTargets: defaultTargets,
+  typicalSchedule: typicalSchedule,
+  startDate: new Date().toISOString().split('T')[0],
+  currentWeek: 1,
+};
+
 export function getProfile(): UserProfile {
-  return load<UserProfile>(KEYS.profile, {
-    name: '',
-    goals: ['Build lean muscle', 'Improve posture', 'Improve running pace', 'Learn basketball'],
-    weeklyTargets: defaultTargets,
-    typicalSchedule: typicalSchedule,
-    startDate: new Date().toISOString().split('T')[0],
-    currentWeek: 1,
-  });
+  return load<UserProfile>(KEYS.profile, defaultProfile);
 }
 
 export function saveProfile(profile: UserProfile) {
   save(KEYS.profile, profile);
+
+  if (isSyncEnabled()) {
+    pushProfile(profile).catch(() => {});
+  }
 }
 
 // Weekly Check-ins
@@ -79,4 +95,33 @@ export function saveCheckIn(checkIn: WeeklyCheckIn) {
     checkIns.push(checkIn);
   }
   save(KEYS.checkIns, checkIns);
+}
+
+// --- Cloud sync: pull & merge ---
+
+export async function syncFromCloud(): Promise<boolean> {
+  if (!isSyncEnabled()) return false;
+
+  try {
+    const [mergedSessions, mergedProfile] = await Promise.all([
+      pullSessions(getSessions()),
+      pullProfile(getProfile()),
+    ]);
+
+    save(KEYS.sessions, mergedSessions);
+    save(KEYS.profile, mergedProfile);
+
+    // Push any local-only sessions back to cloud
+    const remoteIds = new Set(mergedSessions.map((s) => s.id));
+    const localSessions = getSessions();
+    for (const s of localSessions) {
+      if (!remoteIds.has(s.id)) {
+        pushSession(s).catch(() => {});
+      }
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
 }

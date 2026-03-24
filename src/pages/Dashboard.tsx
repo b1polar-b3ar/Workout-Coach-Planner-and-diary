@@ -6,6 +6,8 @@ import { getSessions, getProfile, saveProfile } from '../data/storage';
 import { generateCoachingTips, getWeekNumber, getRunningPaceTarget } from '../utils/coaching';
 import { getWeekCounts, getRemaining, suggestToday, getNextGymVariant } from '../utils/weekHelpers';
 import { getAiCoaching, getApiKey, saveApiKey, AiSuggestion } from '../utils/aiCoach';
+import { getSyncConfig, saveSyncConfig, isSyncEnabled, subscribe, disconnect } from '../data/supabase';
+import { syncFromCloud } from '../data/storage';
 
 const DAYS: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const FEELINGS = ['😫', '😕', '😐', '🙂', '💪'];
@@ -20,6 +22,11 @@ export default function Dashboard() {
   const [aiError, setAiError] = useState('');
   const [apiKey, setApiKey] = useState(getApiKey());
   const [showApiInput, setShowApiInput] = useState(false);
+  const [showSync, setShowSync] = useState(false);
+  const [syncUrl, setSyncUrl] = useState('');
+  const [syncKey, setSyncKey] = useState('');
+  const [syncCode, setSyncCode] = useState('');
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'done' | 'error'>('idle');
   const profile = getProfile();
   const today = new Date();
   const todayStr = format(today, 'yyyy-MM-dd');
@@ -29,6 +36,30 @@ export default function Dashboard() {
   useEffect(() => {
     setSessions(getSessions());
     setName(profile.name);
+
+    // Load sync config
+    const cfg = getSyncConfig();
+    setSyncUrl(cfg.url);
+    setSyncKey(cfg.key);
+    setSyncCode(cfg.code);
+
+    // Pull from cloud on load if sync is configured
+    if (isSyncEnabled()) {
+      setSyncStatus('syncing');
+      syncFromCloud().then((ok) => {
+        setSyncStatus(ok ? 'done' : 'error');
+        if (ok) setSessions(getSessions());
+      });
+
+      // Subscribe to real-time changes from other devices
+      subscribe(() => {
+        syncFromCloud().then((ok) => {
+          if (ok) setSessions(getSessions());
+        });
+      });
+    }
+
+    return () => { disconnect(); };
   }, []);
 
   const weekNumber = getWeekNumber(profile.startDate);
@@ -297,6 +328,114 @@ export default function Dashboard() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+      </div>
+
+      {/* Cloud Sync */}
+      <div className="card" style={{ marginTop: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="card-title" style={{ marginBottom: 0 }}>Cloud Sync</div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {isSyncEnabled() && (
+              <span style={{ fontSize: 11, color: syncStatus === 'done' ? 'var(--success)' : syncStatus === 'error' ? 'var(--danger)' : 'var(--text-secondary)' }}>
+                {syncStatus === 'syncing' ? 'Syncing...' : syncStatus === 'done' ? 'Synced' : syncStatus === 'error' ? 'Error' : ''}
+              </span>
+            )}
+            <button
+              className="btn btn-sm btn-secondary"
+              onClick={() => setShowSync(!showSync)}
+              style={{ fontSize: 11, padding: '4px 8px' }}
+            >
+              {showSync ? 'Hide' : 'Setup'}
+            </button>
+          </div>
+        </div>
+
+        {!showSync && !isSyncEnabled() && (
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 8 }}>
+            Sync your workouts across devices with Supabase (free).
+          </p>
+        )}
+
+        {showSync && (
+          <div style={{ marginTop: 12 }}>
+            <div className="input-group">
+              <label className="input-label">Supabase URL</label>
+              <input
+                placeholder="https://abc123.supabase.co"
+                value={syncUrl}
+                onChange={(e) => setSyncUrl(e.target.value)}
+              />
+            </div>
+            <div className="input-group">
+              <label className="input-label">Anon Key</label>
+              <input
+                type="password"
+                placeholder="eyJhbGciOiJI..."
+                value={syncKey}
+                onChange={(e) => setSyncKey(e.target.value)}
+              />
+            </div>
+            <div className="input-group">
+              <label className="input-label">Sync Code (same on all devices)</label>
+              <input
+                placeholder="my-secret-code"
+                value={syncCode}
+                onChange={(e) => setSyncCode(e.target.value)}
+              />
+            </div>
+            <button
+              className="btn btn-success btn-full"
+              onClick={() => {
+                saveSyncConfig(syncUrl, syncKey, syncCode);
+                setSyncStatus('syncing');
+                syncFromCloud().then((ok) => {
+                  setSyncStatus(ok ? 'done' : 'error');
+                  if (ok) setSessions(getSessions());
+                  subscribe(() => {
+                    syncFromCloud().then((ok2) => {
+                      if (ok2) setSessions(getSessions());
+                    });
+                  });
+                });
+              }}
+            >
+              Connect & Sync
+            </button>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 8, lineHeight: 1.5 }}>
+              Create a free project at{' '}
+              <a href="https://supabase.com" target="_blank" rel="noopener" style={{ color: 'var(--accent-light)' }}>
+                supabase.com
+              </a>
+              , then run this SQL in the SQL Editor:
+              <div style={{ background: 'var(--bg-input)', padding: 8, borderRadius: 6, marginTop: 6, fontFamily: 'monospace', fontSize: 10, whiteSpace: 'pre-wrap', overflowX: 'auto' }}>
+{`create table sessions (
+  id uuid primary key,
+  sync_code text not null,
+  data jsonb not null,
+  updated_at timestamptz default now()
+);
+
+create table profiles (
+  sync_code text primary key,
+  data jsonb not null,
+  updated_at timestamptz default now()
+);
+
+alter table sessions
+  enable row level security;
+alter table profiles
+  enable row level security;
+
+create policy "sessions_all"
+  on sessions for all
+  using (true);
+create policy "profiles_all"
+  on profiles for all
+  using (true);`}
+              </div>
+            </div>
           </div>
         )}
       </div>
